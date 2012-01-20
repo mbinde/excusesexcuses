@@ -1,0 +1,239 @@
+<?php
+
+define('DRUPAL_ROOT', '/var/www/gamehead.com');
+$_SERVER['REMOTE_ADDR'] = "localhost"; // Necessary if running from command line
+require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
+drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+
+$root = '/var/www/gamehead.com/sites/gamehead.com/modules/import';
+
+//$file = "product-import-20110702.csv";
+$file = 'products-2.csv';
+
+$in_path = "$root/$file";
+
+ini_set('auto_detect_line_endings', 1);
+$lines = file($in_path);
+ini_set('auto_detect_line_endings', 0);
+
+// product,brand,publisher_1,category,short_name,Reference_url,min_players,max_players,recommended_age,play_time,is_expansion,release_date,release_date_granularity,designer_1_first,designer_1_middle,designer_1_last,designer_2_first,designer_2_middle,designer_2_last,designer_3_first,designer_3_middle,designer_3_last,designer_4_first,designer_4_middle,designer_1_last,designer_5_first,design
+
+// skip the first line
+array_shift($lines);
+
+foreach ($lines as $line) {
+  if (strlen($line) > 0) {
+    $data = csvstring_to_array($line, ',', '"', "\r");
+    $results['count']++;
+
+    $category = strtolower($data[3]);
+
+    $product = array();
+    $product = gh_product_new($category);
+    $product->title = $data[0];
+    $product->status = 1;
+    $product->language = LANGUAGE_NONE;
+    $product->created = time();
+    $product->changed = $product->created;
+    $product->uid = 1;
+
+    $product->gh_product_title_short[$product->language][0]['value'] = $data[4];
+    $product->gh_product_manufacturer_url[$product->language][0]['url'] = $data[5];
+    $product->gh_product_player_count[$product->language][0]['min'] = $data[6] * 10;
+    $product->gh_product_player_count[$product->language][0]['max'] = $data[7] * 10;
+    $product->gh_product_recommended_ages[$product->language][0]['recommended_ages'] = $data[8] * 10;
+    $product->gh_product_game_length[$product->language][0]['length'] = get_game_length($data);
+    if ($data[10] == 1) {
+      $product->gh_product_is_expansion[$product->language][0]['is_expansion'] = $data[10];
+    }
+    add_date($product, $data);
+    add_designers($product, $data);
+    $product->gh_product_gh_pick[$product->language][0]['gh_pick'] = $data[28];
+
+    $gh_manufacturer = get_manufacturer($data);
+    $product->gh_product_manufacturer[$product->language][0]['gh_manufacturer_id'] = $gh_manufacturer->id;
+    $product->gh_product_manufacturer[$product->language][0]['country'] = strtoupper($data[29]);
+
+    $gh_brand = get_brand($data, $category);
+    $product->gh_product_brand[$product->language][0]['gh_brand_id'] = $gh_brand->id;
+
+    gh_product_save($product);
+    print '"' . $data[0] . '",' . $product->id . "\n";
+  }
+}
+
+function add_date(&$product, $data) {
+  $date = $data[11];
+  $y = substr($date, 0, 4);
+  $m = substr($date, 4, 2);
+  $d = substr($date, 6, 2);
+  $new_date = new DateObject("$y-$m-$d 00:00:00", "UTC");
+  if ($m && $d && $y && $new_date) {
+    $product->gh_product_partial_date[$product->language][0]['date'] = $new_date->format("U");
+    $g = 0;
+    switch ($data[12]) {
+      case 'year':
+        $g = 1;
+        break;
+      case 'year_month':
+        $g = 2;
+        break;
+      case 'year_month_date':
+        $g = 3;
+        break;
+    }
+    $product->gh_product_partial_date[$product->language][0]['granularity'] = $g;
+  }
+}
+
+
+function get_manufacturer($data) {
+    $manufacturer = $data[2];
+
+    $query = new EntityFieldQuery();
+
+    $query
+      ->entityCondition('entity_type', 'gh_manufacturer', '=')
+      ->propertyCondition('title', $manufacturer, '=');
+    $result = $query->execute();
+
+    if (!$result) {
+      // we need to create it
+      $gh_manufacturer = array();
+      $gh_manufacturer = gh_manufacturer_new("game");
+      $gh_manufacturer->title = $manufacturer;
+      $gh_manufacturer->status = 1;
+      $gh_manufacturer->language = LANGUAGE_NONE;
+      $gh_manufacturer->created = time();
+      $gh_manufacturer->changed = $gh_manufacturer->created;
+      $gh_manufacturer->uid = 1;
+      gh_manufacturer_save($gh_manufacturer);
+    } else {
+      $gh_manufacturer = array_pop($result['gh_manufacturer']);
+    }
+
+    return $gh_manufacturer;
+}
+
+function get_brand($data, $category) {
+    $brand = $data[1];
+
+    $query = new EntityFieldQuery();
+
+    $query
+      ->entityCondition('entity_type', 'gh_brand', '=')
+      ->propertyCondition('title', $brand, '=');
+    $result = $query->execute();
+
+    if (!$result) {
+      // we need to create it
+      $gh_brand = array();
+      $gh_brand = gh_brand_new("game");
+      $gh_brand->title = $brand;
+      $gh_brand->status = 1;
+      $gh_brand->language = LANGUAGE_NONE;
+      $gh_brand->gh_brand_category[$gh_brand->language][0]['category'] = $category;
+      $gh_brand->created = time();
+      $gh_brand->changed = $gh_brand->created;
+      $gh_brand->uid = 1;
+      gh_brand_save($gh_brand);
+    } else {
+      $gh_brand = array_pop($result['gh_brand']);
+    }
+
+    return $gh_brand;
+}
+
+
+function get_game_length($data) {
+  // figure out game length
+  $val = "9999";
+  switch ($data[9]) {
+    case "Short":
+      $val = 100;
+      break;
+    case 'Medium':
+      $val = 200;
+      break;
+    case "Long":
+      $val = 300;
+      break;
+    case "Very Long":
+      $val = 400;
+      break;
+  }
+  return $val;
+}
+
+function add_designers(&$product, $data) {
+  $i = 0;
+  if ($data[13] || $data[14] || $data[15]) {
+    $designer = get_designer($data[13], $data[14], $data[15]);
+    $product->gh_product_designer[$product->language][$i]['gh_person_id'] = $designer->id;
+    $i++;
+  }
+  if ($data[16] || $data[17] || $data[18]) {
+    $designer = get_designer($data[16], $data[17], $data[18]);
+    $product->gh_product_designer[$product->language][$i]['gh_person_id'] = $designer->id;
+    $i++;
+  }
+  if ($data[19] || $data[20] || $data[21]) {
+    $designer = get_designer($data[19], $data[20], $data[21]);
+    $product->gh_product_designer[$product->language][$i]['gh_person_id'] = $designer->id;
+    $i++;
+  }
+  if ($data[22] || $data[23] || $data[24]) {
+    $designer = get_designer($data[22], $data[23], $data[24]);
+    $product->gh_product_designer[$product->language][$i]['gh_person_id'] = $designer->id;
+    $i++;
+  }
+  if ($data[25] || $data[26] || $data[27]) {
+    $designer = get_designer($data[25], $data[26], $data[27]);
+    $product->gh_product_designer[$product->language][$i]['gh_person_id'] = $designer->id;
+    $i++;
+  }
+}
+
+function get_designer($first, $middle, $last) {
+  $query = new EntityFieldQuery();
+
+  $query
+    ->entityCondition('entity_type', 'gh_person', '=');
+  if ($first) {
+    $query
+      ->fieldCondition('gh_person_first', 'value', $first, '=', 0);
+  }
+  if ($second) {
+    $query
+      ->fieldCondition('gh_person_middle', 'value', $middle, '=', 0);
+  }
+  if ($last) {
+    $query
+      ->fieldCondition('gh_person_last', 'value', $last, '=', 0);
+  }
+
+  $result = $query->execute();
+
+  if (!$result) {
+    // create the person
+    $gh_person = array();
+    $gh_person = gh_person_new("gamehead");
+    $gh_person->title =
+      ($first ? "$first " : "") . ($middle ? "$middle " : "") . ($last ? $last : "");
+    $gh_person->status = 1;
+    $gh_person->language = LANGUAGE_NONE;
+    $gh_person->created = time();
+    $gh_person->changed = $gh_person->created;
+    $gh_person->uid = 1;
+    $gh_person->gh_person_first[$gh_person->language][0]['value'] = $first;
+    $gh_person->gh_person_second[$gh_person->language][0]['value'] = $second;
+    $gh_person->gh_person_last[$gh_person->language][0]['value'] = $last;
+    $gh_person->gh_person_role[$gh_person->language][0]['role'] = "creator";
+    gh_person_save($gh_person);
+  } else {
+    $gh_person = array_pop($result['gh_person']);
+  }
+  return $gh_person;
+}
+
+
