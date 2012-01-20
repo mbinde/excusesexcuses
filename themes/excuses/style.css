@@ -72,6 +72,12 @@ margin-bottom: 20px;
 
 #instructions {
  font-style: italic;
+ margin-left: 50px;
+ margin-bottom: 20px;
+}
+
+#intro {
+ font-style: italic;
 margin-top: 50px;
  margin-bottom: 20px;
 }
@@ -103,11 +109,54 @@ float: left;
 margin-left: 242px;
 }
 #edit-q4-1 {
-margin-left: 160px;
+margin-left: 174px;
+}
+
+
+.form-item-team {
+margin-top: 30px;
+}
+#edit-team {
+margin-left: 10px;
+float: left;
+}
+
+#team_suffix{
+float: left;
+margin-left: 10px;
 }
 
 .break {
 clear: both;
+}
+
+#top_header {
+font-size: 18px;
+margin-top: 50px;
+font-variant: small-caps;
+font-weight: bold;
+}
+
+table, th, td {
+border: 1px solid white;
+}
+
+table {
+ width: 300px;
+border-top: 2px solid black;
+}
+
+tr.odd,
+tr.info {
+  background-color: #ddd;
+}
+
+tr.even {
+  background-color: #ccc;
+}
+
+td.mine {
+  background-color: #ff0;
 }
 
 #page {

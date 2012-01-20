@@ -18,14 +18,14 @@ function excuses_core_menu() {
   return $menu;
 }
 
+
 function rating_questions() {
   return array(
     1 => 'Does this excuse read clearly?',
     2 => 'Is this excuse believeable?',
     3 => 'Is this excuse hilarious?',
-    4 => 'Is this excuse lame or unbelievable?',
+    4 => 'Is this excuse lame or impossible?',
   );
-
 }
 
 
@@ -36,25 +36,62 @@ function rating_questions() {
  */
 
 function excuses_core_random() {
+  $team = isset($_REQUEST['t']) ? $_REQUEST['t'] : '';
+
   $output = '';
 
   $excuse = generate_random_excuse();
+  $excuse['team'] = $team;
 
   $output .= '<div id="excuse">' . display_excuse($excuse) . '</div>';
   $output .= drupal_render(drupal_get_form('excuses_core_rating_form', $excuse));
-  /*
-  $output .= theme(
-    'excuse_form',
-    array('form' => drupal_get_form('excuses_core_rating_form', $excuse)));
-  */
+
+  $output .= display_top_teams($team);
 
   return $output;
 }
 
+
+/**
+ * Format the top teams display, highlighting the user's team if appropriate
+ */
+function display_top_teams($my_team) {
+  $output = '';
+
+  $query = db_query('SELECT name, count FROM {excuses_teams} ORDER BY count DESC LIMIT 10');
+
+  $rows = array();
+  foreach ($query as $team) {
+
+    $class = (strtolower($team->name) == strtolower($my_team)) ? 'mine' : 'other';
+
+    $rows[] = array(
+      array('data' => $team->name, 'class' => $class),
+      array('data' => $team->count, 'class' => $class));
+  }
+
+  $output .= '<div class="break"></div>';
+  $output .= '<div id="top_header">Top Excuse-Makers</div>';
+  $output .= theme('table', array(
+               'header' => array(),
+               'rows' => $rows
+             ));
+
+  return $output;
+}
+
+
+/**
+ * Format the sentence for a given excuse.
+ */
 function display_excuse($excuse) {
   return 'I ' . excuse_text($excuse['yellow']) . ' because ' . excuse_text($excuse['red']) . ' ' . excuse_text($excuse['blue']);
 }
 
+
+/**
+ * Get random versions of each excuse part
+ */
 function generate_random_excuse() {
   $excuse = array();
   $excuse['yellow'] = excuse_fragment_random_yellow();
@@ -68,7 +105,6 @@ function generate_random_excuse() {
 /**
  * Excuse form functions
  */
-
 function excuses_core_rating_form($form, &$form_state, $options = array()) {
   $questions = rating_questions();
 
@@ -98,16 +134,32 @@ function excuses_core_rating_form($form, &$form_state, $options = array()) {
     '#value' => t('I need another excuse!'),
   );
 
+  // if we have a team already, expand our display
+  $suffix = isset($options['team']) ? '<div id="team_suffix">has made ' . team_count($options['team']) . ' excuses!</div>' : '';
+
+  $form['team'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Your Name: ',
+    '#size' => 16,
+    '#default_value' => (isset($options['team']) ? $options['team'] : ''),
+    '#suffix' => $suffix,
+  );
+
   return $form;
 }
 
 
 function excuses_core_rating_form_submit($form, &$form_state) {
-
   $questions = rating_questions();
 
+  // record the questions and their responses in the appropriate tables
+  $answers = 0;
   foreach ($questions as $key => $value) {
+
     if ($form_state['values']['q' . $key] != 99) {
+      // we answered this question; store the responses
+      $answers ++;
+
       $record = array(
         'question' => $key,
         'value' => $form_state['values']['q' . $key],
@@ -127,10 +179,58 @@ function excuses_core_rating_form_submit($form, &$form_state) {
         unset($record['id']);
       }
 
+      // we now have a data structure to write to the combined table as well
       drupal_write_record('excuses_rating_combined', $record);
-
     }
   }
+
+  if (strlen($form_state['values']['team']) > 0) {
+    // if we answered at least one question and have a team, increment our score
+    if ($answers > 0) {
+      increment_team($form_state['values']['team']);
+    }
+
+    // also put our team name in the url
+    $form_state['redirect'] = array(
+      '',
+      array('query' => array('t' => $form_state['values']['team'])));
+  }
+  else {
+    $form_state['redirect'] = array('');
+  }
+}
+
+function increment_team($team) {
+  $count = team_count($team);
+  if ($count > 0) {
+    db_update('excuses_teams')
+      ->expression('count', 'count + :count', array(':count' => 1))
+      ->condition('name', $team)
+      ->execute();
+  }
+  else {
+    db_insert('excuses_teams')
+      ->fields(array(
+          'name' => $team,
+          'count' => 1,
+          'created' => REQUEST_TIME,
+        ))
+      ->execute();
+  }
+}
+
+function team_count($team) {
+  if (strlen($team) > 0) {
+    $result = db_query(
+      'SELECT count FROM {excuses_teams} WHERE name = :team',
+      array(':team' => $team));
+    $team = $result->fetchObject();
+    if ($team) {
+      return $team->count;
+    }
+  }
+  // fallthrough
+  return 0;
 }
 
 
@@ -139,7 +239,8 @@ function excuses_core_rating_form_submit($form, &$form_state) {
  */
 function excuses_core_preprocess_page(&$variables) {
   $variables['subtitle'] = 'Excuse improvement engine';
-  $variables['instructions'] = "You're in trouble! Here's the best excuse you've managed to come up with:";
+  $variables['instructions'] = 'Excuses, Excuses is a card game in development where you build excuses for problems. The Excuse Improvement Engine generates problem and excuse combinations that might be made in the game, and allows you to help us find excuses that don\'t read smoothly--and make the rest better. Thanks for playing this game before the game! -- Seth Johnson, game designer';
+  $variables['intro'] = "You're in trouble! Here's the best excuse you've managed to come up with:";
 }
 
 

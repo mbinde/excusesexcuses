@@ -23,6 +23,9 @@
     <?php if ($instructions): ?>
       <div id="instructions"><?php print $instructions; ?></div>
     <?php endif; ?>
+    <?php if ($intro): ?>
+      <div id="intro"><?php print $intro; ?></div>
+    <?php endif; ?>
 
       <div class="element-invisible"><a id="main-content"></a></div>
       <?php if ($messages): ?>
