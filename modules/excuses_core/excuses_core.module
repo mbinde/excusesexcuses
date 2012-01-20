@@ -1,6 +1,72 @@
 <?php
 
-/**                                                                                                                                                           
- * @file                                                                                                                                                      
- * A module that defines the excuses, excuses core functionality and various helper functions.                                                                        
+/**
+ * @file
+ * A module that defines the excuses, excuses core functionality and various helper functions.
  */
+
+/**
+ * Implements hook_menu().
+ */
+function excuses_core_menu() {
+  $menu['random'] = array (
+    'title' => 'Excuses, Excuses',
+    'page callback' => 'excuses_core_random',
+    'access arguments' => array('access content'),
+  );
+
+  return $menu;
+}
+
+
+/**
+ * The main program loop.
+ *
+ * Displays a random excuse, provides voting.
+ */
+
+function excuses_core_random() {
+  $output = '';
+
+  $output .= _excuse_random();
+
+  return $output;
+}
+
+
+
+function _excuse_random() {
+  return 'I ' . excuse_text(_excuse_random_yellow()) . ' because ' . excuse_text(_excuse_random_red()) . ' ' . excuse_text(_excuse_random_blue());
+}
+
+function excuse_text($obj) {
+  return strtolower($obj->title);
+}
+
+function _excuse_random_yellow() {
+  return _excuse_random_helper('problem_cards');
+}
+
+function _excuse_random_red() {
+  return _excuse_random_helper('red_excuse');
+}
+
+function _excuse_random_blue() {
+  return _excuse_random_helper('blue_excuse');
+}
+
+function _excuse_random_helper($type) {
+  $result = db_query("SELECT * FROM {node}
+                      WHERE type = :type
+                      ORDER BY RAND()
+                      LIMIT 1",
+            array(':type' => $type));
+  return $result->fetchObject();
+}
+
+
+function print_r2($val){
+  echo '<pre>';
+  print_r($val);
+  echo  '</pre>';
+}
