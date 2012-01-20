@@ -40,8 +40,13 @@ function excuses_core_random() {
 
   $excuse = generate_random_excuse();
 
-  $output .= display_excuse($excuse);
+  $output .= '<div id="excuse">' . display_excuse($excuse) . '</div>';
   $output .= drupal_render(drupal_get_form('excuses_core_rating_form', $excuse));
+  /*
+  $output .= theme(
+    'excuse_form',
+    array('form' => drupal_get_form('excuses_core_rating_form', $excuse)));
+  */
 
   return $output;
 }
@@ -77,17 +82,20 @@ function excuses_core_rating_form($form, &$form_state, $options = array()) {
   }
 
   foreach ($questions as $key => $value) {
-    $form['q' . $key] = array(
+    $form['questions']['q' . $key] = array(
       '#type' => 'radios',
       '#title' => $value,
       '#options' => array('1' => 'Yes', '2' => 'No'),
       '#default_value' => 99,
     );
+    $form['questions']['q' . $key . '-spacer'] = array(
+      '#markup' => '<div class="break"><hr></div>',
+    );
   }
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Thank you sir, may I have another?'),
+    '#value' => t('I need another excuse!'),
   );
 
   return $form;
@@ -125,6 +133,53 @@ function excuses_core_rating_form_submit($form, &$form_state) {
   }
 }
 
+
+/**
+ * Implementation of hook_preprocess_page()
+ */
+function excuses_core_preprocess_page(&$variables) {
+  $variables['subtitle'] = 'Excuse improvement engine';
+  $variables['instructions'] = "You're in trouble! Here's the best excuse you've managed to come up with:";
+}
+
+
+/**
+ * Implementation of hook_theme().
+ */
+function excuses_core_theme($existing, $type, $theme, $path) {
+  return array(
+    'excuse_form' => array(
+      'variables' => array('form' => NULL),
+    ),
+  );
+}
+
+function theme_excuse_form($vars) {
+  $form = $vars['form'];
+
+  $rows = array();
+  foreach (element_children($form['questions']) as $key) {
+    //    $rows[] = array('data' => drupal_render($form['questions'][$key]), 'class' => 'question');
+    $row = array();
+    $row[] = array('data' => 'foo', 'class' => 'bar');
+    $row[] = array('data' => 'foo', 'class' => 'bar');
+    $rows[] = $row;
+
+  }
+  $header = array();
+  $header[] = t('Answer what questions you can:');
+  $header[] = t('Answer what questions you can:');
+  //  print_r2($header);
+  //  print_r2($rows);
+  //  print_r2(theme('table', $header, $rows));
+  //  exit;
+  $output = theme('table', $header, $rows);
+  $output .= "<hr>";
+  $output .= drupal_render($form);
+  $output .= "<hr>";
+  return $output;
+
+}
 
 
 /**

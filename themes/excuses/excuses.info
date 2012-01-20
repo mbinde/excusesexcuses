@@ -1,0 +1,6 @@
+name = Excuses
+description = Excuses theme
+package = zExcuses
+version = VERSION
+core = 7.x
+stylesheets[all][] = style.css

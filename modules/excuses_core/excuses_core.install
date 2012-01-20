@@ -128,6 +128,48 @@ function excuses_core_schema() {
     'primary key' => array ('id'),
   );
 
+  $schema['excuses_teams'] = array(
+    'description' => 'Table for excuses teams.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Record primary identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'Node ID.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => 'N/A',
+      ),
+      'count' => array(
+        'description' => 'Excuses registered',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'UNIX timestamp when this team was created',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'updated' => array(
+        'description' => 'UNIX timestamp when this team was updated',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'name' => array('name'),
+      'count' => array('count'),
+    ),
+    'primary key' => array ('id'),
+  );
+
   return $schema;
 }
 

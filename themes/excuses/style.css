@@ -1,0 +1,126 @@
+
+/**
+ * @file
+ * Stark layout method
+ *
+ * To avoid obscuring CSS added to the page by Drupal or a contrib module, the
+ * Stark theme itself has no styling, except just enough CSS to arrange the page
+ * in a traditional "Header, sidebars, content, and footer" layout.
+ *
+ * This layout method works reasonably well, but shouldn't be used on a
+ * production site because it can break. For example, if an over-large image
+ * (one that is wider than 20% of the viewport) is in the left sidebar, the
+ * image will overlap with the #content to the right. The exception to this
+ * is IE6 which will just hide the navigation block completely in these
+ * instances due to a positioning bug.
+ */
+
+#content,
+#sidebar-first,
+#sidebar-second {
+  float: left;
+  display: inline;
+  position: relative;
+}
+
+#content {
+  width: 100%;
+}
+body.sidebar-first #content {
+  width: 80%;
+  left: 20%; /* LTR */
+}
+body.sidebar-second #content {
+  width: 80%;
+}
+body.two-sidebars #content {
+  width: 60%;
+  left: 20%;
+}
+
+#sidebar-first {
+  width: 20%;
+  left: -80%; /* LTR */
+}
+
+body.two-sidebars #sidebar-first {
+  left: -60%; /* LTR */
+}
+
+#sidebar-second {
+  float: right; /* LTR */
+  width: 20%;
+}
+
+.section {
+  margin: 10px;
+}
+
+h1 {
+  font-size: 26px;
+font-variant: small-caps;
+ margin-bottom: 10px;
+}
+
+#subtitle {
+  font-size: 18px;
+font-weight: bold;
+font-style: italic;
+font-variant: small-caps;
+margin-bottom: 20px;
+}
+
+#instructions {
+ font-style: italic;
+margin-top: 50px;
+ margin-bottom: 20px;
+}
+
+#excuse {
+  font-size: 22px;
+  margin-bottom: 50px;
+}
+
+
+.form-item-q1 label, .form-item-q2 label {
+ float: left;
+}
+.form-item label {
+float: left;
+}
+
+#edit-q1-1, #edit-q1-2, #edit-q2-1, #edit-q2-2, #edit-q3-1, #edit-q3-2, #edit-q4-1, #edit-q4-2 {
+float: left;
+}
+
+#edit-q1-1 {
+    margin-left: 200px;
+}
+#edit-q2-1 {
+    margin-left: 225px;
+}
+#edit-q3-1 {
+margin-left: 242px;
+}
+#edit-q4-1 {
+margin-left: 160px;
+}
+
+.break {
+clear: both;
+}
+
+#page {
+position: relative;
+}
+
+#edit-submit {
+margin-top: 40px;
+margin-left: 250px;
+  font-size: 18px;
+}
+
+#branding, #content {
+width: 60%;
+left: 20%;
+}
