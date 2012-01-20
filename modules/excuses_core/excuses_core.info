@@ -1,0 +1,9 @@
+name = Excuses Core
+version = 7.x-1.0
+description = Excuses, Excuses
+package = zExcuses
+core = 7.x
+files[] = excuses_core.install
+files[] = excuses_core.module
+
+
