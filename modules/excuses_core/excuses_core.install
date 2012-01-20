@@ -1,5 +1,134 @@
 <?php
 
-/**
- * will need to add our statistic tables here
- */
+
+
+
+function excuses_core_schema() {
+  $schema['excuses_rating'] = array(
+    'description' => 'Table for excuses ratings.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Record primary identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => 'Node ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'description' => 'Node Version ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'question' => array(
+        'description' => 'which question was asked',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'value' => array(
+        'description' => 'the value of the rating',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'UNIX timestamp when this rating was entered',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'nid' => array('nid', 'vid'),
+      'question' => array('question', 'value'),
+    ),
+    'primary key' => array ('id'),
+  );
+
+  $schema['excuses_rating_combined'] = array(
+    'description' => 'Table to store the triples of excuses and their score.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'red_nid' => array(
+        'description' => 'Node ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'red_vid' => array(
+        'description' => 'Node Version ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'yellow_nid' => array(
+        'description' => 'Node ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'yellow_vid' => array(
+        'description' => 'Node Version ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'blue_nid' => array(
+        'description' => 'Node ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'blue_vid' => array(
+        'description' => 'Node Version ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'question' => array(
+        'description' => 'which question was asked',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'value' => array(
+        'description' => 'the value of the rating',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'UNIX timestamp when this rating was entered',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'red_nid' => array('red_nid', 'red_vid'),
+      'yellow_nid' => array('yellow_nid', 'yellow_vid'),
+      'blue_nid' => array('blue_nid', 'blue_vid'),
+      'question' => array('question', 'value'),
+    ),
+    'primary key' => array ('id'),
+  );
+
+  return $schema;
+}
+
+

@@ -18,6 +18,16 @@ function excuses_core_menu() {
   return $menu;
 }
 
+function rating_questions() {
+  return array(
+    1 => 'Does this excuse read clearly?',
+    2 => 'Is this excuse believeable?',
+    3 => 'Is this excuse hilarious?',
+    4 => 'Is this excuse lame or unbelievable?',
+  );
+
+}
+
 
 /**
  * The main program loop.
@@ -28,34 +38,120 @@ function excuses_core_menu() {
 function excuses_core_random() {
   $output = '';
 
-  $output .= _excuse_random();
+  $excuse = generate_random_excuse();
+
+  $output .= display_excuse($excuse);
+  $output .= drupal_render(drupal_get_form('excuses_core_rating_form', $excuse));
 
   return $output;
 }
 
+function display_excuse($excuse) {
+  return 'I ' . excuse_text($excuse['yellow']) . ' because ' . excuse_text($excuse['red']) . ' ' . excuse_text($excuse['blue']);
+}
+
+function generate_random_excuse() {
+  $excuse = array();
+  $excuse['yellow'] = excuse_fragment_random_yellow();
+  $excuse['red'] = excuse_fragment_random_red();
+  $excuse['blue'] = excuse_fragment_random_blue();
+
+  return $excuse;
+}
 
 
-function _excuse_random() {
-  return 'I ' . excuse_text(_excuse_random_yellow()) . ' because ' . excuse_text(_excuse_random_red()) . ' ' . excuse_text(_excuse_random_blue());
+/**
+ * Excuse form functions
+ */
+
+function excuses_core_rating_form($form, &$form_state, $options = array()) {
+  $questions = rating_questions();
+
+  foreach(array('red', 'yellow', 'blue') as $key) {
+    $form[$key . '_nid'] = array(
+      '#type' => 'hidden',
+      '#value' => $options[$key]->nid);
+    $form[$key . '_vid'] = array(
+      '#type' => 'hidden',
+      '#value' => $options[$key]->vid);
+  }
+
+  foreach ($questions as $key => $value) {
+    $form['q' . $key] = array(
+      '#type' => 'radios',
+      '#title' => $value,
+      '#options' => array('1' => 'Yes', '2' => 'No'),
+      '#default_value' => 99,
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Thank you sir, may I have another?'),
+  );
+
+  return $form;
+}
+
+
+function excuses_core_rating_form_submit($form, &$form_state) {
+
+  $questions = rating_questions();
+
+  foreach ($questions as $key => $value) {
+    if ($form_state['values']['q' . $key] != 99) {
+      $record = array(
+        'question' => $key,
+        'value' => $form_state['values']['q' . $key],
+        'created' => time(),
+      );
+
+      foreach(array('red', 'yellow', 'blue') as $color) {
+        $record[$color . '_nid'] = $form_state['values'][$color . '_nid'];
+        $record[$color . '_vid'] = $form_state['values'][$color . '_vid'];
+
+        $record['nid'] = $form_state['values'][$color . '_nid'];
+        $record['vid'] = $form_state['values'][$color . '_vid'];
+
+        drupal_write_record('excuses_rating', $record);
+
+        // have to remove the ID to re-use the data structure on the next iteration
+        unset($record['id']);
+      }
+
+      drupal_write_record('excuses_rating_combined', $record);
+
+    }
+  }
+}
+
+
+
+/**
+ * Excuse fetching functions
+ */
+
+function display_random_excuse() {
+  return 'I ' . excuse_text(excuse_random_yellow()) . ' because ' . excuse_text(excuse_random_red()) . ' ' . excuse_text(excuse_random_blue());
 }
 
 function excuse_text($obj) {
   return strtolower($obj->title);
 }
 
-function _excuse_random_yellow() {
-  return _excuse_random_helper('problem_cards');
+function excuse_fragment_random_yellow() {
+  return _excuse_fragment_random_helper('problem_cards');
 }
 
-function _excuse_random_red() {
-  return _excuse_random_helper('red_excuse');
+function excuse_fragment_random_red() {
+  return _excuse_fragment_random_helper('red_excuse');
 }
 
-function _excuse_random_blue() {
-  return _excuse_random_helper('blue_excuse');
+function excuse_fragment_random_blue() {
+  return _excuse_fragment_random_helper('blue_excuse');
 }
 
-function _excuse_random_helper($type) {
+function _excuse_fragment_random_helper($type) {
   $result = db_query("SELECT * FROM {node}
                       WHERE type = :type
                       ORDER BY RAND()
